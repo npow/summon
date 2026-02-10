@@ -1,0 +1,34 @@
+models:
+  # Critical thinking roles — use strongest model
+  supervisor: "gpt-4o"
+  architect: "gpt-4o"
+  coder: "gpt-4o"
+  code_reviewer: "gpt-4o"
+  integrator: "gpt-4o"
+  bug_fixer: "gpt-4o"
+
+  # Spec/planning — strong model
+  ambiguity: "gpt-4o"
+  spec_writer: "gpt-4o"
+  prd: "gpt-4o-mini"
+  sdd: "gpt-4o"
+  critic: "gpt-4o"
+  splitter: "gpt-4o-mini"
+  lld: "gpt-4o"
+
+  # Boilerplate roles — cheaper model is fine
+  test_writer: "gpt-4o-mini"
+  packager: "gpt-4o-mini"
+  docs_writer: "gpt-4o-mini"
+  github_agent: "gpt-4o-mini"
+  publisher: "gpt-4o-mini"
+
+quality_thresholds:
+  idea_refinement: 0.7
+  product_planning: 0.75
+  design: 0.75
+  implementation: 0.8
+  integration_testing: 0.85
+  release: 0.8
+
+max_stage_retries: 3

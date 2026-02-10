@@ -1,0 +1,166 @@
+"""Agent factory — creates LangGraph node functions from config."""
+
+from __future__ import annotations
+
+import json
+import re
+from typing import Any
+
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from forge.config import ForgeConfig
+from forge.models import get_llm
+
+
+def create_agent_node(
+    config: ForgeConfig,
+    model_key: str,
+    system_prompt: str,
+    user_prompt_template: str,
+    output_key: str,
+    temperature: float = 0.0,
+):
+    """Factory that returns a LangGraph node function.
+
+    The returned function:
+    1. Formats the user prompt with state values
+    2. Calls the configured LLM
+    3. Parses JSON output
+    4. Returns {output_key: parsed_result}
+    """
+    def node(state: dict[str, Any]) -> dict[str, Any]:
+        model_name = config.get_model(model_key)
+        llm = get_llm(model_name, temperature=temperature)
+
+        # Always use safe formatting
+        safe_state = _make_safe_state(state)
+        user_prompt = user_prompt_template.format_map(_DefaultDict(safe_state))
+
+        messages = [
+            SystemMessage(content=system_prompt + "\n\nIMPORTANT: Return ONLY valid JSON. No markdown, no explanation, just the JSON object."),
+            HumanMessage(content=user_prompt),
+        ]
+
+        response = llm.invoke(messages)
+        content = response.content
+
+        # Parse JSON from response
+        parsed = _extract_json(content)
+        return {output_key: parsed}
+
+    return node
+
+
+def create_structured_agent_node(
+    config: ForgeConfig,
+    model_key: str,
+    system_prompt: str,
+    user_prompt_template: str,
+    output_key: str,
+    output_schema: type,
+    temperature: float = 0.0,
+):
+    """Factory that returns a node using structured output (with_structured_output)."""
+    def node(state: dict[str, Any]) -> dict[str, Any]:
+        model_name = config.get_model(model_key)
+        llm = get_llm(model_name, temperature=temperature)
+        structured_llm = llm.with_structured_output(output_schema)
+
+        safe_state = _make_safe_state(state)
+        user_prompt = user_prompt_template.format_map(_DefaultDict(safe_state))
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+
+        result = structured_llm.invoke(messages)
+        if hasattr(result, 'model_dump'):
+            return {output_key: result.model_dump()}
+        return {output_key: result}
+
+    return node
+
+
+def _make_safe_state(state: dict[str, Any]) -> dict[str, str]:
+    """Convert state values to strings safe for prompt formatting."""
+    safe = {}
+    for k, v in state.items():
+        if isinstance(v, (dict, list)):
+            safe[k] = json.dumps(v, indent=2)
+        else:
+            safe[k] = str(v)
+    return safe
+
+
+def _fix_json_string(text: str) -> str:
+    """Attempt to fix common JSON issues from LLMs."""
+    # Remove trailing commas before } or ]
+    text = re.sub(r',\s*([}\]])', r'\1', text)
+    # Fix single quotes → double quotes (naive but handles most cases)
+    # Only do this if there are no double quotes at all
+    if '"' not in text and "'" in text:
+        text = text.replace("'", '"')
+    return text
+
+
+def _extract_json(text: str) -> dict | list:
+    """Extract JSON from LLM response text, with repair attempts."""
+    text = text.strip()
+
+    # Strategy 1: Direct parse
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Strategy 2: Extract from ```json code blocks
+    if "```json" in text:
+        try:
+            start = text.index("```json") + 7
+            end = text.index("```", start)
+            candidate = text[start:end].strip()
+            return json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            # Try with fixes
+            try:
+                return json.loads(_fix_json_string(candidate))
+            except (json.JSONDecodeError, ValueError, UnboundLocalError):
+                pass
+
+    # Strategy 3: Extract from ``` code blocks
+    if "```" in text:
+        try:
+            start = text.index("```") + 3
+            newline = text.index("\n", start)
+            end = text.index("```", newline)
+            candidate = text[newline:end].strip()
+            return json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            try:
+                return json.loads(_fix_json_string(candidate))
+            except (json.JSONDecodeError, ValueError, UnboundLocalError):
+                pass
+
+    # Strategy 4: Find JSON object/array boundaries
+    for start_char, end_char in [("{", "}"), ("[", "]")]:
+        start_idx = text.find(start_char)
+        end_idx = text.rfind(end_char)
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            candidate = text[start_idx:end_idx + 1]
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                # Try with fixes
+                try:
+                    return json.loads(_fix_json_string(candidate))
+                except json.JSONDecodeError:
+                    continue
+
+    raise ValueError(f"Could not extract JSON from response: {text[:500]}...")
+
+
+class _DefaultDict(dict):
+    """Dict that returns placeholder for missing keys during str.format_map."""
+    def __missing__(self, key: str) -> str:
+        return "(not available)"

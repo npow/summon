@@ -1,0 +1,29 @@
+models:
+  supervisor: "claude-sonnet-4-20250514"
+  ambiguity: "claude-sonnet-4-20250514"
+  spec_writer: "claude-sonnet-4-20250514"
+  prd: "claude-sonnet-4-20250514"
+  sdd: "claude-sonnet-4-20250514"
+  critic: "claude-sonnet-4-20250514"
+  architect: "claude-sonnet-4-20250514"
+  splitter: "claude-sonnet-4-20250514"
+  lld: "claude-sonnet-4-20250514"
+  coder: "claude-sonnet-4-20250514"
+  code_reviewer: "claude-sonnet-4-20250514"
+  integrator: "claude-sonnet-4-20250514"
+  test_writer: "gpt-4o-mini"
+  bug_fixer: "claude-sonnet-4-20250514"
+  packager: "gpt-4o-mini"
+  docs_writer: "gpt-4o-mini"
+  github_agent: "gpt-4o-mini"
+  publisher: "gpt-4o-mini"
+
+quality_thresholds:
+  idea_refinement: 0.7
+  product_planning: 0.75
+  design: 0.75
+  implementation: 0.8
+  integration_testing: 0.85
+  release: 0.8
+
+max_stage_retries: 3
