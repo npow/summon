@@ -37,6 +37,8 @@ def _build_project_context(state: dict[str, Any]) -> dict[str, Any]:
 
 def _process_package(state: dict[str, Any]) -> dict[str, Any]:
     """Write packaging files to workspace."""
+    from forge.workspace import normalize_file_entry
+
     result = state.get("_package_result", {})
     files = result.get("files", [])
     workspace_path = state.get("workspace_path", "")
@@ -45,8 +47,7 @@ def _process_package(state: dict[str, Any]) -> dict[str, Any]:
     if workspace_path and files:
         ws = Workspace(workspace_path)
         for f in files:
-            path = f.get("path", "")
-            content = f.get("content", "")
+            path, content = normalize_file_entry(f)
             if path and content:
                 ws.write_file(path, content)
                 package_files.append(path)
@@ -73,6 +74,8 @@ def _process_docs(state: dict[str, Any]) -> dict[str, Any]:
 
 def _process_github(state: dict[str, Any]) -> dict[str, Any]:
     """Write GitHub config files to workspace."""
+    from forge.workspace import normalize_file_entry
+
     result = state.get("_github_result", {})
     files = result.get("files", [])
     workspace_path = state.get("workspace_path", "")
@@ -80,8 +83,7 @@ def _process_github(state: dict[str, Any]) -> dict[str, Any]:
     if workspace_path and files:
         ws = Workspace(workspace_path)
         for f in files:
-            path = f.get("path", "")
-            content = f.get("content", "")
+            path, content = normalize_file_entry(f)
             if path and content:
                 ws.write_file(path, content)
 

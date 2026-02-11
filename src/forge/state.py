@@ -54,6 +54,26 @@ class ForgeState(TypedDict, total=False):
     project_files: str
     source_files: str
 
+    # Stage 5: Import validation
+    import_errors: str
+    import_validation_passing: bool
+    _import_fix_result: dict[str, Any]
+    import_fix_source_files: str
+
+    # Stage 5: Degeneracy detection & regeneration
+    degenerate_files: str  # JSON list of {file, issue, detail}
+    degeneracy_detected: bool
+    _regen_result: dict[str, Any]
+
+    # Stage 5: Acceptance testing
+    acceptance_criteria: str
+    _acceptance_gen_result: dict[str, Any]
+    acceptance_test_script: str
+    _acceptance_test_gen_result: dict[str, Any]
+    acceptance_test_results: str
+    acceptance_tests_passing: bool
+    _acceptance_fix_result: dict[str, Any]
+
     # Stage 6: Release
     _package_result: dict[str, Any]
     _package_files: list[str]

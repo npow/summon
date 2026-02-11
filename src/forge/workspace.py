@@ -49,3 +49,28 @@ class Workspace:
 
     def __str__(self) -> str:
         return str(self.path)
+
+
+def normalize_file_entry(entry: dict) -> tuple[str, str]:
+    """Extract (path, content) from an LLM-produced file dict.
+
+    LLMs may use varying key names like "filepath", "filename", "file_path"
+    instead of "path", or "code", "source", "body" instead of "content".
+    Returns ("", "") if neither can be resolved.
+    """
+    path = (
+        entry.get("path")
+        or entry.get("filepath")
+        or entry.get("file_path")
+        or entry.get("filename")
+        or entry.get("file_name")
+        or ""
+    )
+    content = (
+        entry.get("content")
+        or entry.get("code")
+        or entry.get("source")
+        or entry.get("body")
+        or ""
+    )
+    return str(path).strip(), str(content)

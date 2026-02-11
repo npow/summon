@@ -114,33 +114,41 @@ def _extract_json(text: str) -> dict | list:
     except json.JSONDecodeError:
         pass
 
-    # Strategy 2: Extract from ```json code blocks
+    # Strategy 2: Extract from ```json code blocks — use last ``` as end marker
     if "```json" in text:
         try:
             start = text.index("```json") + 7
-            end = text.index("```", start)
-            candidate = text[start:end].strip()
-            return json.loads(candidate)
-        except (json.JSONDecodeError, ValueError):
-            # Try with fixes
-            try:
-                return json.loads(_fix_json_string(candidate))
-            except (json.JSONDecodeError, ValueError, UnboundLocalError):
-                pass
+            # Use rfind for the closing ``` since content may contain backticks
+            end = text.rfind("```")
+            if end > start:
+                candidate = text[start:end].strip()
+                try:
+                    return json.loads(candidate)
+                except json.JSONDecodeError:
+                    try:
+                        return json.loads(_fix_json_string(candidate))
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+        except ValueError:
+            pass
 
     # Strategy 3: Extract from ``` code blocks
     if "```" in text:
         try:
             start = text.index("```") + 3
             newline = text.index("\n", start)
-            end = text.index("```", newline)
-            candidate = text[newline:end].strip()
-            return json.loads(candidate)
-        except (json.JSONDecodeError, ValueError):
-            try:
-                return json.loads(_fix_json_string(candidate))
-            except (json.JSONDecodeError, ValueError, UnboundLocalError):
-                pass
+            end = text.rfind("```")
+            if end > newline:
+                candidate = text[newline:end].strip()
+                try:
+                    return json.loads(candidate)
+                except json.JSONDecodeError:
+                    try:
+                        return json.loads(_fix_json_string(candidate))
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+        except ValueError:
+            pass
 
     # Strategy 4: Find JSON object/array boundaries
     for start_char, end_char in [("{", "}"), ("[", "]")]:
@@ -157,7 +165,56 @@ def _extract_json(text: str) -> dict | list:
                 except json.JSONDecodeError:
                     continue
 
+    # Strategy 5: Handle truncated JSON — try to repair by closing open structures
+    for start_char, end_char in [("{", "}"), ("[", "]")]:
+        start_idx = text.find(start_char)
+        if start_idx != -1:
+            candidate = text[start_idx:]
+            repaired = _repair_truncated_json(candidate)
+            if repaired is not None:
+                return repaired
+
     raise ValueError(f"Could not extract JSON from response: {text[:500]}...")
+
+
+def _repair_truncated_json(text: str) -> dict | list | None:
+    """Attempt to repair truncated JSON from LLM output hitting max_tokens.
+
+    Strategy: progressively trim from the end and try closing brackets.
+    For files arrays, try to salvage whatever complete file entries exist.
+    """
+    # Try to find the last complete entry in a files array by looking for
+    # the last complete "content": "..." pattern
+    # First, try just closing off open brackets
+    for suffix in [
+        '"}]}',       # close content string + file object + files array + root
+        '"}\n]}',
+        '"}]\n}',
+        '\n"}]}',
+        '}]}',        # close file object + files array + root
+        ']}',         # close files array + root
+        '}',          # close root
+        ']',          # close array
+    ]:
+        try:
+            return json.loads(text + suffix)
+        except json.JSONDecodeError:
+            continue
+
+    # Try finding the last complete JSON object in a files array
+    # Look for the last `}, {` or `}]` pattern and trim there
+    last_complete = text.rfind('"}\n    }')
+    if last_complete == -1:
+        last_complete = text.rfind('"}')
+    if last_complete > 0:
+        candidate = text[:last_complete + 2]  # include the closing '"}'
+        for suffix in [']}', ']\n}', '\n]}', '\n]\n}']:
+            try:
+                return json.loads(candidate + suffix)
+            except json.JSONDecodeError:
+                continue
+
+    return None
 
 
 class _DefaultDict(dict):

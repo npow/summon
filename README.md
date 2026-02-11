@@ -1,90 +1,100 @@
-# Forge
+# Oneshot
 
-Autonomous idea-to-product pipeline powered by LangGraph. Takes a raw idea and produces a fully built, tested, and packaged project through 6 automated stages.
+**Describe your idea. Get a working project.**
 
-## Pipeline Stages
-
-| # | Stage | Description |
-|---|-------|-------------|
-| 1 | Idea Refinement | Analyze ambiguities, resolve them, write spec |
-| 2 | Product Planning | Generate PRD, SDD, critic review |
-| 3 | High-Level Design | Architect components, split for parallel build |
-| 4 | Implementation | LLD, code generation, code review per component |
-| 5 | Testing | Integration tests, bug fixing |
-| 6 | Package & Release | Packaging, docs, GitHub setup |
-
-## Installation
+Oneshot takes a plain-English description and builds you a complete, working codebase — with tests, docs, and packaging — in one command.
 
 ```bash
-uv sync --all-extras
+oneshot run "youtube transcriber that takes a URL and returns the transcript as text"
 ```
+
+What comes out: a real project with source files, requirements, unit tests, acceptance tests, and a working entry point. Not scaffolding. Not boilerplate. Actual implementations that run.
+
+## Quickstart
+
+```bash
+# Install
+git clone https://github.com/yourname/oneshot && cd oneshot
+uv sync --all-extras
+
+# Set your API key
+export ANTHROPIC_API_KEY=sk-...
+
+# Build something
+oneshot run "CLI tool that converts markdown to PDF" -o ./md2pdf
+```
+
+That's it. Go make coffee. Come back to a working project in `./md2pdf`.
+
+## What it actually does
+
+Your one-liner goes through a full software development lifecycle — automatically:
+
+1. **Refines** your idea into a precise spec (resolves ambiguities, fills gaps)
+2. **Plans** the architecture (PRD, system design, component breakdown)
+3. **Implements** each component in parallel (with code review)
+4. **Integrates** everything into a cohesive project
+5. **Tests** it (import validation, unit tests, acceptance tests — with fix loops)
+6. **Packages** it (README, setup files, docs)
+
+If something breaks, it fixes it. If code comes out degenerate (repetitive, truncated, stub-only), it detects that and regenerates from scratch.
+
+## Stepped workflow
+
+Don't want to run everything at once? Break it up:
+
+```bash
+oneshot ideate "your idea"              # idea -> spec.json
+oneshot plan my-tool.spec.json          # spec -> plan.json
+oneshot design my-tool.plan.json        # plan -> design.json
+oneshot build my-tool.design.json -o .  # design -> working project
+```
+
+Inspect and edit the JSON between steps. `oneshot build` auto-detects where to pick up.
 
 ## Configuration
 
-Copy and edit `forge.yaml` to configure models and quality thresholds:
+Works with Claude (default) or OpenAI models. Edit `forge.yaml`:
 
 ```yaml
 models:
-  supervisor: "claude-sonnet-4-20250514"
+  supervisor: "claude-sonnet-4-20250514"   # or "gpt-4o"
   coder: "claude-sonnet-4-20250514"
-  # ...
-
-quality_thresholds:
-  idea_refinement: 0.7
-  implementation: 0.8
-  # ...
+  test_writer: "gpt-4o-mini"              # cheaper models for simpler tasks
 ```
 
-## Usage
-
-### Full pipeline (idea to shipped product)
+Use `forge-openai.yaml` for a full OpenAI configuration:
 
 ```bash
-forge run "build a CLI tool that converts markdown to PDF"
+oneshot run "your idea" -c forge-openai.yaml
 ```
 
-### Stepped workflow (pause, inspect, and refine between stages)
+## Options
+
+```
+-c, --config PATH    Config file (default: forge.yaml)
+-o, --output PATH    Output directory
+-v, --verbose        Show what's happening
+--skip-gates         Skip quality gates
+--dry-run            Skip GitHub/publishing
+```
+
+## Requirements
+
+- Python 3.11+
+- An API key for [Anthropic](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/)
+- [uv](https://github.com/astral-sh/uv) (recommended) or pip
+
+## Contributing
+
+Contributions are welcome. Open an issue first for anything non-trivial.
 
 ```bash
-# Stage 1: Idea → Spec
-forge ideate "build a CLI tool that converts markdown to PDF"
-# → my-tool.spec.json
-
-# Stage 2: Spec → PRD + SDD
-forge plan my-tool.spec.json
-# → my-tool.plan.json
-
-# Stage 3: Plan → HLD + Components
-forge design my-tool.plan.json
-# → my-tool.design.json
-
-# Stages 4-6: Design → Code → Test → Ship
-forge build my-tool.design.json -o ./my-tool
-```
-
-`forge build` auto-detects which stage to start from based on the JSON file contents, so you can also skip intermediate steps:
-
-```bash
-forge build my-tool.spec.json    # runs stages 2-6
-forge build my-tool.plan.json    # runs stages 3-6
-forge build my-tool.design.json  # runs stages 4-6
-```
-
-### Common options
-
-```
--c, --config PATH    Path to forge.yaml
--o, --output PATH    Output path/directory
--v, --verbose        Show detailed output
---skip-gates         Skip supervisor quality gates
---dry-run            Skip GitHub and publishing
---no-github          Skip GitHub repo creation
---no-publish         Skip package publishing
-```
-
-## Development
-
-```bash
+git clone https://github.com/yourname/oneshot && cd oneshot
 uv sync --all-extras
 uv run pytest tests/ -v
 ```
+
+## License
+
+[MIT](LICENSE)

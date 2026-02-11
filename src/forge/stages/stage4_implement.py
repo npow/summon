@@ -142,7 +142,7 @@ def fan_out_components(state: dict[str, Any]) -> list[Send]:
 
 def _write_files_to_workspace(state: dict[str, Any]) -> dict[str, Any]:
     """Write all component files to the workspace directory."""
-    from forge.workspace import Workspace
+    from forge.workspace import Workspace, normalize_file_entry
 
     workspace_path = state.get("workspace_path", "")
     if not workspace_path:
@@ -155,8 +155,7 @@ def _write_files_to_workspace(state: dict[str, Any]) -> dict[str, Any]:
     for result in component_results:
         files = result.get("files", [])
         for f in files:
-            path = f.get("path", "")
-            content = f.get("content", "")
+            path, content = normalize_file_entry(f)
             if path and content:
                 ws.write_file(path, content)
 

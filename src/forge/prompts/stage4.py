@@ -19,9 +19,13 @@ Write a detailed implementation plan covering:
 4. How this component interfaces with dependencies
 5. For each function: what it actually does step by step, not just its name
 
-Be specific. If this component needs to download YouTube audio, say "use yt-dlp \
-to download, extract audio with ffmpeg". If it needs speech-to-text, say "use \
-OpenAI Whisper (local model) via the openai-whisper package". No hand-waving.
+Be specific about which libraries to use and how. Name the exact package and API calls — \
+no hand-waving.
+
+IMPORTANT CONSTRAINTS:
+- All files go in the project root — no src/ subdirectory.
+- Use plain imports: "from models import X", not "from src.models import X".
+- Do NOT redefine types that belong in the shared models.py — import them.
 
 Return as JSON:
 {{"lld_summary": "detailed implementation plan text"}}
@@ -48,7 +52,7 @@ Write the FULL implementation for each file in this component.
 
 CRITICAL RULES:
 1. Every function must contain real, working logic — NOT placeholders or stubs
-2. Use real third-party libraries where needed (yt-dlp, whisper, flask, etc.)
+2. Use real third-party libraries where needed
 3. Include ALL imports at the top of each file
 4. Add type hints to all function signatures
 5. Handle errors with try/except and meaningful error messages
@@ -56,17 +60,21 @@ CRITICAL RULES:
 7. Follow the spec's language: {language}
 8. Do NOT write tests — those come in Stage 5
 
-If you are unsure how to implement something, use the most common/standard \
-library for that task and implement it fully. For example:
-- YouTube download → yt-dlp
-- Audio transcription → openai-whisper (local) or speech_recognition
-- Web server → Flask or FastAPI
-- File parsing → standard library or well-known packages
+IMPORT AND STRUCTURE RULES:
+9. All files go in the project ROOT — no src/ subdirectory, no nested packages.
+10. Use plain imports: "from models import MyClass", "from downloader import func".
+   NEVER use "from src." or package-qualified imports.
+11. Do NOT redefine data classes/types that belong in models.py or another component. \
+    Import them instead. Check the HLD's "shared_types" and other components' interfaces.
+12. If the HLD says a type is in models.py, import it: "from models import TypeName".
+13. If the HLD's interfaces list a function like "download_video(url) -> str", \
+    you MUST define it as a top-level module function, NOT as a method on a class. \
+    Other modules will import it by name: "from downloader import download_video".
 
 Return as JSON:
 {{
   "files": [
-    {{"path": "relative/path/to/file.py", "content": "full file content"}}
+    {{"path": "filename.py", "content": "full file content"}}
   ]
 }}
 """

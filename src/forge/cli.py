@@ -190,7 +190,7 @@ def _print_results(final_state: dict, verbose: bool = False):
 
 @click.group()
 def main():
-    """Forge: Autonomous idea-to-product pipeline."""
+    """Oneshot: Autonomous idea-to-product pipeline."""
     pass
 
 
@@ -220,7 +220,7 @@ def run(
     console.print()
     console.print(Panel(
         f"[bold]{idea}[/bold]",
-        title="[bold blue]⚒ Forge Pipeline[/bold blue]",
+        title="[bold blue]⚒ Oneshot Pipeline[/bold blue]",
         subtitle="[dim]idea → spec → design → code → test → ship[/dim]",
         padding=(1, 2),
     ))
@@ -292,7 +292,7 @@ def ideate(
     console.print()
     console.print(Panel(
         f"[bold]{idea}[/bold]",
-        title="[bold blue]⚒ Forge Ideate[/bold blue]",
+        title="[bold blue]⚒ Oneshot Ideate[/bold blue]",
         subtitle="[dim]idea → spec[/dim]",
         padding=(1, 2),
     ))
@@ -442,7 +442,7 @@ def plan(
     console.print(Panel(
         f"[bold]Project:[/bold] {project_name}\n"
         f"[bold]Spec:[/bold]    {spec_file}",
-        title="[bold blue]⚒ Forge Plan[/bold blue]",
+        title="[bold blue]⚒ Oneshot Plan[/bold blue]",
         subtitle="[dim]spec → PRD + SDD[/dim]",
         padding=(1, 2),
     ))
@@ -545,7 +545,7 @@ def design(
     console.print(Panel(
         f"[bold]Project:[/bold] {project_name}\n"
         f"[bold]Plan:[/bold]    {plan_file}",
-        title="[bold blue]⚒ Forge Design[/bold blue]",
+        title="[bold blue]⚒ Oneshot Design[/bold blue]",
         subtitle="[dim]PRD + SDD → HLD + components[/dim]",
         padding=(1, 2),
     ))
@@ -661,7 +661,7 @@ def build(
         f"[bold]Project:[/bold] {project_name}\n"
         f"[bold]Input:[/bold]   {spec_file}\n"
         f"[bold]Start:[/bold]   stage {from_stage} ({start_label} detected)",
-        title="[bold blue]⚒ Forge Build[/bold blue]",
+        title="[bold blue]⚒ Oneshot Build[/bold blue]",
         subtitle=f"[dim]{start_label} → code → test → ship[/dim]",
         padding=(1, 2),
     ))

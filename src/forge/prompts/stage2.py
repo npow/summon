@@ -50,6 +50,7 @@ Write an SDD as JSON:
 }}
 
 Keep it simple and aligned with the spec's language and package_type.
+Use a FLAT directory structure for CLIs: main.py, module1.py, module2.py (no src/ nesting).
 """
 
 CRITIC = """\

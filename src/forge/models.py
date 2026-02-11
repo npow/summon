@@ -41,10 +41,10 @@ def get_llm(model_name: str, temperature: float = 0.0) -> BaseChatModel:
 
     if model_name.startswith("claude"):
         from langchain_anthropic import ChatAnthropic
-        return ChatAnthropic(model=model_name, temperature=temperature, max_tokens=8192)
+        return ChatAnthropic(model=model_name, temperature=temperature, max_tokens=16384)
     elif model_name.startswith("gpt") or model_name.startswith("o1") or model_name.startswith("o3"):
         from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model=model_name, temperature=temperature)
+        return ChatOpenAI(model=model_name, temperature=temperature, max_tokens=16384)
     elif model_name.startswith("gemini"):
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(model=model_name, temperature=temperature)

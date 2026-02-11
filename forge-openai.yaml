@@ -6,6 +6,11 @@ models:
   code_reviewer: "gpt-4o"
   integrator: "gpt-4o"
   bug_fixer: "gpt-4o"
+  import_fixer: "gpt-4o"
+  code_regenerator: "gpt-4o"
+  acceptance_criteria_gen: "gpt-4o"
+  acceptance_test_gen: "gpt-4o"
+  acceptance_fixer: "gpt-4o"
 
   # Spec/planning — strong model
   ambiguity: "gpt-4o"

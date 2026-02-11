@@ -18,17 +18,25 @@ Create an HLD as JSON:
       "id": "comp-001",
       "name": "component name",
       "description": "what it does",
-      "files": ["src/module.py"],
+      "files": ["module.py"],
       "dependencies": [],
       "interfaces": ["function_name(args) -> return_type"]
     }}
   ],
   "shared_types": ["type definitions used across components"],
-  "entry_point": "src/main.py"
+  "entry_point": "main.py"
 }}
 
-Break the system into 2-6 components that can be implemented independently.
-Each component should have clear file boundaries and interfaces.
+ARCHITECTURE RULES:
+1. Use a FLAT file structure — all .py files in the project root. No src/ subdirectory, \
+no nested packages. Example files: main.py, utils.py, core.py, models.py
+2. Put ALL shared data classes / types in a single models.py file that other modules import from.
+3. Every component's "interfaces" must list the exact function signatures other components call.
+4. File lists MUST NOT overlap between components. If two components need the same type, \
+it belongs in the shared models.py (assign it to exactly one component).
+5. Break the system into 2-4 components for small CLI tools, more for larger projects.
+6. The entry_point file (e.g. main.py) should be its own component that imports from the others.
+7. Use plain imports between modules: "from models import MyClass", "from downloader import download".
 """
 
 COMPONENT_SPLITTER = """\
