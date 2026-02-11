@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from forge.workspace import Workspace
+from oneshot.workspace import Workspace
 
 
 def test_workspace_creates_temp_dir():

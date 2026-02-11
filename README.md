@@ -54,7 +54,7 @@ Inspect and edit the JSON between steps. `oneshot build` auto-detects where to p
 
 ## Configuration
 
-Works with Claude (default) or OpenAI models. Edit `forge.yaml`:
+Works with Claude (default) or OpenAI models. Edit `oneshot.yaml`:
 
 ```yaml
 models:
@@ -63,16 +63,16 @@ models:
   test_writer: "gpt-4o-mini"              # cheaper models for simpler tasks
 ```
 
-Use `forge-openai.yaml` for a full OpenAI configuration:
+Use `oneshot-openai.yaml` for a full OpenAI configuration:
 
 ```bash
-oneshot run "your idea" -c forge-openai.yaml
+oneshot run "your idea" -c oneshot-openai.yaml
 ```
 
 ## Options
 
 ```
--c, --config PATH    Config file (default: forge.yaml)
+-c, --config PATH    Config file (default: oneshot.yaml)
 -o, --output PATH    Output directory
 -v, --verbose        Show what's happening
 --skip-gates         Skip quality gates

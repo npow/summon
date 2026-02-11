@@ -2,7 +2,7 @@
 
 import json
 
-from forge.agents.base import _extract_json, _DefaultDict
+from oneshot.agents.base import _extract_json, _DefaultDict
 
 
 def test_extract_json_plain():

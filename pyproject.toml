@@ -25,10 +25,10 @@ dev = [
 ]
 
 [project.scripts]
-oneshot = "forge.cli:main"
+oneshot = "oneshot.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/forge"]
+packages = ["src/oneshot"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

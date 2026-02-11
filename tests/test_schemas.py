@@ -1,12 +1,12 @@
 """Tests for Pydantic schemas."""
 
-from forge.schemas.spec import IdeaSpec, FunctionalRequirement
-from forge.schemas.prd import PRD, UserStory
-from forge.schemas.sdd import SDD, TechChoice
-from forge.schemas.hld import HLD, ComponentDesign
-from forge.schemas.component import ComponentResult, FileOutput
-from forge.schemas.quality import GateResult
-from forge.schemas.release import ReleaseInfo
+from oneshot.schemas.spec import IdeaSpec, FunctionalRequirement
+from oneshot.schemas.prd import PRD, UserStory
+from oneshot.schemas.sdd import SDD, TechChoice
+from oneshot.schemas.hld import HLD, ComponentDesign
+from oneshot.schemas.component import ComponentResult, FileOutput
+from oneshot.schemas.quality import GateResult
+from oneshot.schemas.release import ReleaseInfo
 
 
 def test_idea_spec():

@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from forge.executor import run_command
+from oneshot.executor import run_command
 
 
 def test_successful_command():

@@ -1,6 +1,6 @@
 """Tests for supervisor gate."""
 
-from forge.supervisor import gate_passed
+from oneshot.supervisor import gate_passed
 
 
 def test_gate_passed_with_passing_result():

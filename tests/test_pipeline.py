@@ -2,12 +2,12 @@
 
 import pytest
 
-from forge.config import ForgeConfig
-from forge.pipeline import build_pipeline
+from oneshot.config import OneshotConfig
+from oneshot.pipeline import build_pipeline
 
 
 def test_pipeline_builds_with_gates():
-    config = ForgeConfig()
+    config = OneshotConfig()
     pipeline = build_pipeline(config, skip_gates=False)
     assert pipeline is not None
     # Check that the graph has nodes
@@ -18,7 +18,7 @@ def test_pipeline_builds_with_gates():
 
 
 def test_pipeline_builds_without_gates():
-    config = ForgeConfig()
+    config = OneshotConfig()
     pipeline = build_pipeline(config, skip_gates=True)
     assert pipeline is not None
     graph = pipeline.get_graph()
@@ -28,7 +28,7 @@ def test_pipeline_builds_without_gates():
 
 
 def test_pipeline_until_stage_1():
-    config = ForgeConfig()
+    config = OneshotConfig()
     pipeline = build_pipeline(config, skip_gates=True, until_stage=1)
     graph = pipeline.get_graph()
     node_ids = list(graph.nodes)
@@ -39,7 +39,7 @@ def test_pipeline_until_stage_1():
 
 
 def test_pipeline_from_stage_2():
-    config = ForgeConfig()
+    config = OneshotConfig()
     pipeline = build_pipeline(config, skip_gates=True, from_stage=2)
     graph = pipeline.get_graph()
     node_ids = list(graph.nodes)
@@ -51,7 +51,7 @@ def test_pipeline_from_stage_2():
 
 
 def test_pipeline_from_stage_2_with_gates():
-    config = ForgeConfig()
+    config = OneshotConfig()
     pipeline = build_pipeline(config, skip_gates=False, from_stage=2)
     graph = pipeline.get_graph()
     node_ids = list(graph.nodes)
@@ -61,7 +61,7 @@ def test_pipeline_from_stage_2_with_gates():
 
 
 def test_pipeline_stage_range_3_to_5():
-    config = ForgeConfig()
+    config = OneshotConfig()
     pipeline = build_pipeline(config, skip_gates=True, from_stage=3, until_stage=5)
     graph = pipeline.get_graph()
     node_ids = list(graph.nodes)
