@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from oneshot.executor import run_command
+from summon.executor import run_command
 
 
 def test_successful_command():

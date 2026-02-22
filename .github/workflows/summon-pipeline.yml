@@ -1,0 +1,59 @@
+name: Summon Pipeline
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  summon:
+    if: github.event.label.name == 'auto-build'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Summon
+        run: pip install -e .
+
+      - name: Extract idea from issue
+        id: idea
+        run: |
+          IDEA=$(gh issue view ${{ github.event.issue.number }} --json title,body --jq '.title + ". " + .body')
+          echo "idea=$IDEA" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Summon Pipeline
+        id: summon
+        run: |
+          summon run "${{ steps.idea.outputs.idea }}" \
+            --no-github --no-publish \
+            --output ./summon-output \
+            --verbose 2>&1 | tee summon.log
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Post results as comment
+        if: always()
+        run: |
+          if [ -d "./summon-output" ]; then
+            FILES=$(find ./summon-output -type f | head -20)
+            BODY="## Summon Pipeline Results\n\n"
+            BODY+="### Generated Files\n\`\`\`\n${FILES}\n\`\`\`\n\n"
+            BODY+="### Pipeline Log (last 50 lines)\n\`\`\`\n$(tail -50 summon.log)\n\`\`\`"
+          else
+            BODY="## Summon Pipeline Failed\n\n\`\`\`\n$(tail -100 summon.log)\n\`\`\`"
+          fi
+          gh issue comment ${{ github.event.issue.number }} --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,7 +2,7 @@
 
 import json
 
-from oneshot.agents.base import _extract_json, _DefaultDict
+from summon.agents.base import _extract_json, _DefaultDict
 
 
 def test_extract_json_plain():

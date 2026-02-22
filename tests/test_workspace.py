@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from oneshot.workspace import Workspace
+from summon.workspace import Workspace
 
 
 def test_workspace_creates_temp_dir():

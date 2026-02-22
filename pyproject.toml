@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "oneshot"
+name = "summon"
 version = "0.1.0"
 description = "Autonomous idea-to-product pipeline — one idea in, working project out"
 requires-python = ">=3.11"
@@ -19,16 +19,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+checkpoint = [
+    "langgraph-checkpoint-sqlite>=2.0.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
 ]
 
 [project.scripts]
-oneshot = "oneshot.cli:main"
+summon = "summon.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/oneshot"]
+packages = ["src/summon"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

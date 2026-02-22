@@ -1,12 +1,12 @@
 """Tests for Pydantic schemas."""
 
-from oneshot.schemas.spec import IdeaSpec, FunctionalRequirement
-from oneshot.schemas.prd import PRD, UserStory
-from oneshot.schemas.sdd import SDD, TechChoice
-from oneshot.schemas.hld import HLD, ComponentDesign
-from oneshot.schemas.component import ComponentResult, FileOutput
-from oneshot.schemas.quality import GateResult
-from oneshot.schemas.release import ReleaseInfo
+from summon.schemas.spec import IdeaSpec, FunctionalRequirement
+from summon.schemas.prd import PRD, UserStory
+from summon.schemas.sdd import SDD, TechChoice
+from summon.schemas.hld import HLD, ComponentDesign
+from summon.schemas.component import ComponentResult, FileOutput
+from summon.schemas.quality import GateResult
+from summon.schemas.release import ReleaseInfo
 
 
 def test_idea_spec():

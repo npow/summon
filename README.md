@@ -1,11 +1,11 @@
-# Oneshot
+# Summon
 
 **When I have an idea, I want a working project — not a to-do list.**
 
-You shouldn't need to write a spec, plan an architecture, scaffold files, wire up tests, and package a release just to validate an idea. Oneshot collapses the entire software development lifecycle into a single command.
+You shouldn't need to write a spec, plan an architecture, scaffold files, wire up tests, and package a release just to validate an idea. Summon collapses the entire software development lifecycle into a single command.
 
 ```bash
-oneshot run "CLI tool that converts markdown to PDF" -o ./md2pdf
+summon run "CLI tool that converts markdown to PDF" -o ./md2pdf
 ```
 
 What comes out isn't scaffolding or boilerplate. It's a working project with real implementations, tests that pass, and packaging ready to go.
@@ -22,7 +22,7 @@ Turning an idea into a working project requires a long chain of tasks that are i
 
 Each step depends on the last. Skip one and the rest fall apart. Do them all manually and you've burned hours before writing a line of real logic.
 
-**Oneshot's job:** take a plain-English description and do all of that — automatically, with quality gates and fix loops at every stage — so you get a working project back.
+**Summon's job:** take a plain-English description and do all of that — automatically, with quality gates and fix loops at every stage — so you get a working project back.
 
 ## How it works
 
@@ -65,14 +65,14 @@ If tests fail, a bug-fixer agent reads the errors and patches the code. If the c
 
 ```bash
 # Install
-git clone https://github.com/yourname/oneshot && cd oneshot
+git clone https://github.com/yourname/summon && cd summon
 uv sync --all-extras
 
 # Set your API key
 export ANTHROPIC_API_KEY=sk-...
 
 # Build something
-oneshot run "youtube transcriber that takes a URL and returns the transcript as text" -o ./yt-transcriber
+summon run "youtube transcriber that takes a URL and returns the transcript as text" -o ./yt-transcriber
 ```
 
 ## Stepped workflow
@@ -80,10 +80,10 @@ oneshot run "youtube transcriber that takes a URL and returns the transcript as 
 Run stages individually to inspect and edit between steps:
 
 ```bash
-oneshot ideate "your idea"              # idea → spec.json
-oneshot plan my-tool.spec.json          # spec → plan.json
-oneshot design my-tool.plan.json        # plan → design.json
-oneshot build my-tool.design.json -o .  # design → working project
+summon ideate "your idea"              # idea → spec.json
+summon plan my-tool.spec.json          # spec → plan.json
+summon design my-tool.plan.json        # plan → design.json
+summon build my-tool.design.json -o .  # design → working project
 ```
 
 Each stage outputs a JSON file you can read, modify, and feed into the next stage.
@@ -100,13 +100,13 @@ models:
 ```
 
 ```bash
-oneshot run "your idea" -c oneshot-openai.yaml   # full OpenAI config
+summon run "your idea" -c summon-openai.yaml   # full OpenAI config
 ```
 
 ## Options
 
 ```
--c, --config PATH    Config file (default: oneshot.yaml)
+-c, --config PATH    Config file (default: summon.yaml)
 -o, --output PATH    Output directory
 -v, --verbose        Show what's happening
 --skip-gates         Skip quality gates
@@ -116,7 +116,7 @@ oneshot run "your idea" -c oneshot-openai.yaml   # full OpenAI config
 ## Limitations
 
 - **Python-only (for now).** The full pipeline — degeneracy detection, import validation, acceptance tests, and packaging — is built for Python projects. TypeScript and Go have basic dep-install and test-run support but no quality gates or fix loops.
-- **Single-process CLI tools and libraries.** Oneshot works best for self-contained projects: CLI tools, libraries, data scripts. It doesn't generate infrastructure, databases, frontends, or multi-service architectures.
+- **Single-process CLI tools and libraries.** Summon works best for self-contained projects: CLI tools, libraries, data scripts. It doesn't generate infrastructure, databases, frontends, or multi-service architectures.
 - **LLM cost.** A full run makes many LLM calls across 6 stages. Simple ideas may cost a few dollars; complex ones with multiple retry loops will cost more.
 - **No interactive clarification.** Ambiguities in your idea are resolved by the LLM, not by asking you. If the LLM guesses wrong, edit the spec JSON and re-run from that stage.
 
@@ -129,7 +129,7 @@ oneshot run "your idea" -c oneshot-openai.yaml   # full OpenAI config
 ## Contributing
 
 ```bash
-git clone https://github.com/yourname/oneshot && cd oneshot
+git clone https://github.com/yourname/summon && cd summon
 uv sync --all-extras
 uv run pytest tests/ -v
 ```

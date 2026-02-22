@@ -1,6 +1,6 @@
 """Tests for supervisor gate."""
 
-from oneshot.supervisor import gate_passed
+from summon.supervisor import gate_passed
 
 
 def test_gate_passed_with_passing_result():
