@@ -38,7 +38,7 @@ flowchart TD
     A["Your idea (plain English)"] --> B
 
     B["1. Ideate"]:::stage --> C
-    B -.- B1["Detect ambiguities → Self-clarify\n→ Write spec → Validate"]
+    B -.- B1["Detect ambiguities → Self-clarify<br/>→ Write spec → Validate"]
 
     C["2. Plan"]:::stage --> D
     C -.- C1["Write PRD → Write SDD → Critic review"]
@@ -48,11 +48,11 @@ flowchart TD
     D -.- D1["Architect HLD → Split into components"]
 
     E["4. Build"]:::stage --> F
-    E -.- E1["Per component, in parallel:\nLLD → Code → Review"]
+    E -.- E1["Per component, in parallel:<br/>LLD → Code → Review"]
     E1 -- "rejected (up to 2x)" --> E1
 
     F["5. Test"]:::stage --> G
-    F -.- F1["Integrate → Degeneracy check\n→ Import validation → Unit tests\n→ Acceptance tests"]
+    F -.- F1["Integrate → Degeneracy check<br/>→ Import validation → Unit tests<br/>→ Acceptance tests"]
     F1 -- "failing (auto-fix loops)" --> F1
 
     G["6. Release"]:::stage --> H
