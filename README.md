@@ -1,6 +1,11 @@
 # Summon
 
-**When I have an idea, I want a working project — not a to-do list.**
+[![PyPI version](https://img.shields.io/pypi/v/summon-ai)](https://pypi.org/project/summon-ai/)
+[![Python versions](https://img.shields.io/pypi/pyversions/summon-ai)](https://pypi.org/project/summon-ai/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/npow/summon/actions/workflows/ci.yml/badge.svg)](https://github.com/npow/summon/actions/workflows/ci.yml)
+
+**When I have an idea, I want a working project — not "almost works".**
 
 You shouldn't need to write a spec, plan an architecture, scaffold files, wire up tests, and package a release just to validate an idea. Summon collapses the entire software development lifecycle into a single command.
 
@@ -65,7 +70,7 @@ If tests fail, a bug-fixer agent reads the errors and patches the code. If the c
 
 ```bash
 # Install
-git clone https://github.com/yourname/summon && cd summon
+git clone https://github.com/npow/summon && cd summon
 uv sync --all-extras
 
 # Set your API key
@@ -129,7 +134,7 @@ summon run "your idea" -c summon-openai.yaml   # full OpenAI config
 ## Contributing
 
 ```bash
-git clone https://github.com/yourname/summon && cd summon
+git clone https://github.com/npow/summon && cd summon
 uv sync --all-extras
 uv run pytest tests/ -v
 ```

@@ -190,6 +190,93 @@ Return JSON:
 IMPORTANT: Output the COMPLETE content for every regenerated file.
 """
 
+ADVERSARIAL_TEST_WRITER = """\
+You are an adversarial test engineer. Your job is to break code by finding edge cases \
+that the original unit tests missed.
+
+Spec:
+{spec}
+
+Source code:
+{project_files}
+
+Existing unit tests (DO NOT duplicate these):
+{test_code}
+
+TASK: Read every function in the source code above and write adversarial tests that \
+target edge cases the existing tests likely missed.
+
+Systematically generate tests for these categories:
+1. **Boundary values**: empty strings, zero, negative numbers, min/max int, empty lists/dicts
+2. **Off-by-one**: fence-post errors, range boundaries, loop limits
+3. **Type coercion / None**: None inputs, wrong types, missing keys, empty containers
+4. **Unicode edge cases**: CJK characters, emoji (multi-codepoint), zero-width joiners, \
+   combining characters, RTL markers
+5. **Whitespace / formatting**: tabs, newlines, carriage returns, leading/trailing spaces, \
+   multiple consecutive spaces
+6. **Special characters**: quotes, backslashes, null bytes, angle brackets, percent signs
+7. **Trailing/leading artifacts**: trailing separators, leading delimiters, dangling commas
+8. **Return value consistency**: verify return types match docstrings, no accidental None returns
+9. **Idempotency**: calling a function twice with the same input produces the same result
+10. **Consecutive/repeated inputs**: repeated delimiters, duplicate entries, all-same values
+
+Return JSON:
+{{
+  "test_code": "complete test file content",
+  "test_file_path": "tests/test_adversarial.py"
+}}
+
+RULES:
+- Use pytest. Import from the project modules exactly as the existing tests do.
+- Each test should have a clear, descriptive name (e.g. test_convert_empty_string_raises).
+- Aim for 15-30 tests. Quality over quantity.
+- Focus on bugs that would bite real users, not contrived scenarios.
+- DO NOT duplicate any test case from the existing unit tests.
+- Every test must be self-contained — no shared mutable state between tests.
+"""
+
+ADVERSARIAL_BUG_FIXER = """\
+You are a debugging expert. Fix the source code to handle edge cases found by \
+adversarial testing.
+
+Spec:
+{spec}
+
+Adversarial test results (failures):
+{adversarial_test_results}
+
+Relevant source files:
+{source_files}
+
+Adversarial test file:
+{adversarial_test_code}
+
+Analyze each failure and fix the PROJECT SOURCE CODE (not the test assertions) \
+to handle these edge cases correctly.
+
+Common fixes to consider:
+- Strip trailing/leading separators or delimiters from output
+- Collapse consecutive separators (e.g. "a//b" → "a/b")
+- Handle None/empty inputs gracefully (raise TypeError/ValueError or return sensible default)
+- Ensure idempotency — same input always produces same output
+- Handle unicode correctly (normalize if needed, don't break multi-byte chars)
+- Validate input types at function boundaries
+
+Return JSON:
+{{
+  "fixes": [
+    {{"file_path": "path/to/file.py", "content": "complete fixed file content"}}
+  ],
+  "explanation": "what was wrong and how you fixed it"
+}}
+
+IMPORTANT:
+- Fix the SOURCE code, not the test assertions (unless a test is clearly wrong).
+- Output the COMPLETE content for every file you fix.
+- Only change what's needed to make adversarial tests pass.
+- Don't break existing unit tests while fixing edge cases.
+"""
+
 ACCEPTANCE_CRITERIA_GENERATOR = """\
 You are a QA engineer. Generate concrete, testable acceptance criteria for this project.
 

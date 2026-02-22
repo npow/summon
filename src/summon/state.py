@@ -54,6 +54,12 @@ class SummonState(TypedDict, total=False):
     project_files: str
     source_files: str
 
+    # Stage 5: Adversarial testing
+    _adversarial_test_result: dict[str, Any]
+    adversarial_test_code: str
+    adversarial_test_results: str
+    adversarial_tests_passing: bool
+
     # Stage 5: Import validation
     import_errors: str
     import_validation_passing: bool

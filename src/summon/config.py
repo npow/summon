@@ -40,6 +40,7 @@ class SummonConfig(BaseModel):
         "acceptance_criteria_gen": "claude-sonnet-4-20250514",
         "acceptance_test_gen": "claude-sonnet-4-20250514",
         "acceptance_fixer": "claude-sonnet-4-20250514",
+        "adversarial_tester": "claude-sonnet-4-20250514",
         "packager": "gpt-4o-mini",
         "docs_writer": "gpt-4o-mini",
         "github_agent": "gpt-4o-mini",

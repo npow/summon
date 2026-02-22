@@ -18,6 +18,8 @@ from summon.agents.code_regenerator import create_code_regenerator_node
 from summon.agents.acceptance_criteria_gen import create_acceptance_criteria_gen_node
 from summon.agents.acceptance_test_gen import create_acceptance_test_gen_node
 from summon.agents.acceptance_fixer import create_acceptance_fixer_node
+from summon.agents.adversarial_tester import create_adversarial_tester_node
+from summon.agents.adversarial_fixer import create_adversarial_fixer_node
 from summon.config import SummonConfig
 from summon.executor import run_command
 from summon.state import SummonState
@@ -529,6 +531,122 @@ def _process_import_fixes(state: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Adversarial testing nodes
+# ---------------------------------------------------------------------------
+
+
+def _build_adversarial_context(state: dict[str, Any]) -> dict[str, Any]:
+    """Build project files context for adversarial test writer."""
+    return _build_project_files_context(state)
+
+
+def _process_adversarial_tests(state: dict[str, Any]) -> dict[str, Any]:
+    """Write adversarial test file to workspace."""
+    result = state.get("_adversarial_test_result", {})
+    test_code = result.get("test_code", "")
+    test_path = result.get("test_file_path", "tests/test_adversarial.py")
+    workspace_path = state.get("workspace_path", "")
+
+    if workspace_path and test_code:
+        ws = Workspace(workspace_path)
+        ws.write_file(test_path, test_code)
+
+    return {"adversarial_test_code": test_code}
+
+
+def _run_adversarial_tests(state: dict[str, Any]) -> dict[str, Any]:
+    """Run only the adversarial tests (not the full suite)."""
+    import os
+
+    workspace_path = state.get("workspace_path", "")
+    if not workspace_path:
+        return {"adversarial_test_results": "No workspace", "adversarial_tests_passing": False}
+
+    venv_python = os.path.join(workspace_path, ".venv", "bin", "python")
+    if os.path.exists(venv_python):
+        cmd = f"{venv_python} -m pytest tests/test_adversarial.py -v --tb=short 2>&1"
+    else:
+        cmd = "python -m pytest tests/test_adversarial.py -v --tb=short 2>&1"
+
+    env = os.environ.copy()
+    pypath_parts = [workspace_path]
+    src_dir = os.path.join(workspace_path, "src")
+    if os.path.isdir(src_dir):
+        pypath_parts.append(src_dir)
+    env["PYTHONPATH"] = os.pathsep.join(pypath_parts)
+
+    result = run_command(cmd, cwd=workspace_path, timeout=120, env=env)
+    output = result.output[:4000]
+
+    passing = result.success
+    if passing:
+        import re
+        fail_patterns = [
+            r'\d+ failed',
+            r'^FAILED ',
+            r'^ERRORS$',
+            r'failures=\d*[1-9]',
+            r'Tests:\s+\d+ failed',
+        ]
+        for pattern in fail_patterns:
+            if re.search(pattern, output, re.MULTILINE):
+                passing = False
+                break
+
+    return {
+        "adversarial_test_results": output,
+        "adversarial_tests_passing": passing,
+    }
+
+
+def _adversarial_decision(state: dict[str, Any]) -> str:
+    """Route based on adversarial test results."""
+    if state.get("adversarial_tests_passing", False):
+        return "passing"
+    retries = state.get("stage_retries", {}).get("adversarial_fix", 0)
+    if retries >= 3:
+        return "force_pass"
+    return "failing"
+
+
+def _build_adversarial_fix_context(state: dict[str, Any]) -> dict[str, Any]:
+    """Build context for adversarial fixer with source files."""
+    workspace_path = state.get("workspace_path", "")
+    if not workspace_path:
+        return {"source_files": "(no source files)"}
+
+    ws = Workspace(workspace_path)
+    files = [
+        f for f in ws.list_files()
+        if f.endswith(".py")
+        and not f.startswith("tests/")
+        and not f.startswith(".venv/")
+        and f != "acceptance_test.py"
+    ]
+    return {"source_files": collect_file_contents(ws, files)}
+
+
+def _process_adversarial_fixes(state: dict[str, Any]) -> dict[str, Any]:
+    """Apply adversarial bug fixes to workspace and bump retry counter."""
+    from summon.workspace import normalize_file_entry
+
+    result = state.get("_adversarial_fix_result", {})
+    fixes = result.get("fixes", [])
+    workspace_path = state.get("workspace_path", "")
+
+    if workspace_path and fixes:
+        ws = Workspace(workspace_path)
+        for fix in fixes:
+            path, content = normalize_file_entry(fix)
+            if path and content:
+                ws.write_file(path, content)
+
+    retries = dict(state.get("stage_retries", {}))
+    retries["adversarial_fix"] = retries.get("adversarial_fix", 0) + 1
+    return {"stage_retries": retries}
+
+
+# ---------------------------------------------------------------------------
 # Acceptance testing nodes
 # ---------------------------------------------------------------------------
 
@@ -665,6 +783,8 @@ def create_stage5_graph(config: SummonConfig) -> StateGraph:
       → validate_imports ←── (import fix loop, 3 retries)
       → build_context → write_tests → process_tests
       → run_tests ←── (unit test fix loop, 3 retries)
+      → build_adversarial_context → write_adversarial_tests → process_adversarial_tests
+      → run_adversarial_tests ←── (adversarial fix loop, 3 retries)
       → rebuild_context → generate_acceptance_criteria → process_criteria
       → generate_acceptance_tests → process_acceptance_tests
       → run_acceptance_tests ←── (acceptance fix loop, 2 retries)
@@ -697,6 +817,15 @@ def create_stage5_graph(config: SummonConfig) -> StateGraph:
     graph.add_node("build_fix_context", _build_fix_context)
     graph.add_node("fix_bugs", create_bug_fixer_node(config))
     graph.add_node("process_fixes", _process_fixes)
+
+    # --- Adversarial test loop ---
+    graph.add_node("build_adversarial_context", _build_adversarial_context)
+    graph.add_node("write_adversarial_tests", create_adversarial_tester_node(config))
+    graph.add_node("process_adversarial_tests", _process_adversarial_tests)
+    graph.add_node("run_adversarial_tests", _run_adversarial_tests)
+    graph.add_node("build_adversarial_fix_context", _build_adversarial_fix_context)
+    graph.add_node("fix_adversarial_bugs", create_adversarial_fixer_node(config))
+    graph.add_node("process_adversarial_fixes", _process_adversarial_fixes)
 
     # --- Acceptance test loop ---
     graph.add_node("rebuild_context", _rebuild_context)
@@ -753,14 +882,31 @@ def create_stage5_graph(config: SummonConfig) -> StateGraph:
         "run_tests",
         _test_decision,
         {
-            "passing": "rebuild_context",
+            "passing": "build_adversarial_context",
             "failing": "build_fix_context",
-            "force_pass": "rebuild_context",
+            "force_pass": "build_adversarial_context",
         }
     )
     graph.add_edge("build_fix_context", "fix_bugs")
     graph.add_edge("fix_bugs", "process_fixes")
     graph.add_edge("process_fixes", "run_tests")
+
+    # Adversarial test loop
+    graph.add_edge("build_adversarial_context", "write_adversarial_tests")
+    graph.add_edge("write_adversarial_tests", "process_adversarial_tests")
+    graph.add_edge("process_adversarial_tests", "run_adversarial_tests")
+    graph.add_conditional_edges(
+        "run_adversarial_tests",
+        _adversarial_decision,
+        {
+            "passing": "rebuild_context",
+            "failing": "build_adversarial_fix_context",
+            "force_pass": "rebuild_context",
+        }
+    )
+    graph.add_edge("build_adversarial_fix_context", "fix_adversarial_bugs")
+    graph.add_edge("fix_adversarial_bugs", "process_adversarial_fixes")
+    graph.add_edge("process_adversarial_fixes", "run_adversarial_tests")
 
     # Acceptance test loop
     graph.add_edge("rebuild_context", "generate_acceptance_criteria")
