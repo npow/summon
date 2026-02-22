@@ -1,14 +1,65 @@
 # Oneshot
 
-**Describe your idea. Get a working project.**
+**When I have an idea, I want a working project — not a to-do list.**
 
-Oneshot takes a plain-English description and builds you a complete, working codebase — with tests, docs, and packaging — in one command.
+You shouldn't need to write a spec, plan an architecture, scaffold files, wire up tests, and package a release just to validate an idea. Oneshot collapses the entire software development lifecycle into a single command.
 
 ```bash
-oneshot run "youtube transcriber that takes a URL and returns the transcript as text"
+oneshot run "CLI tool that converts markdown to PDF" -o ./md2pdf
 ```
 
-What comes out: a real project with source files, requirements, unit tests, acceptance tests, and a working entry point. Not scaffolding. Not boilerplate. Actual implementations that run.
+What comes out isn't scaffolding or boilerplate. It's a working project with real implementations, tests that pass, and packaging ready to go.
+
+## The problem
+
+Turning an idea into a working project requires a long chain of tasks that are individually straightforward but collectively exhausting:
+
+- Clarify what you actually mean (resolve ambiguities in your own idea)
+- Write a spec, then an architecture doc, then a design
+- Implement each component, review the code, fix issues
+- Wire everything together, validate imports, write tests, fix failures
+- Package it, write docs, set up CI
+
+Each step depends on the last. Skip one and the rest fall apart. Do them all manually and you've burned hours before writing a line of real logic.
+
+**Oneshot's job:** take a plain-English description and do all of that — automatically, with quality gates and fix loops at every stage — so you get a working project back.
+
+## How it works
+
+Your idea flows through six stages. Each stage has built-in feedback loops that catch and fix problems before moving on.
+
+```mermaid
+flowchart TD
+    A["Your idea (plain English)"] --> B
+
+    B["1. Ideate"]:::stage --> C
+    B -.- B1["Detect ambiguities → Self-clarify\n→ Write spec → Validate"]
+
+    C["2. Plan"]:::stage --> D
+    C -.- C1["Write PRD → Write SDD → Critic review"]
+    C1 -- "rejected (up to 3x)" --> C1
+
+    D["3. Design"]:::stage --> E
+    D -.- D1["Architect HLD → Split into components"]
+
+    E["4. Build"]:::stage --> F
+    E -.- E1["Per component, in parallel:\nLLD → Code → Review"]
+    E1 -- "rejected (up to 2x)" --> E1
+
+    F["5. Test"]:::stage --> G
+    F -.- F1["Integrate → Degeneracy check\n→ Import validation → Unit tests\n→ Acceptance tests"]
+    F1 -- "failing (auto-fix loops)" --> F1
+
+    G["6. Release"]:::stage --> H
+    G -.- G1["Package → Docs → GitHub config"]
+
+    H["Working project"]:::output
+
+    classDef stage fill:#2d333b,stroke:#58a6ff,color:#e6edf3
+    classDef output fill:#1a7f37,stroke:#3fb950,color:#fff
+```
+
+If tests fail, a bug-fixer agent reads the errors and patches the code. If the critic rejects the plan, the planner revises. If imports break, an import-fixer rewires them. If generated code is degenerate (all stubs, repetitive, or truncated), it gets regenerated from scratch. Every fix loop has a retry cap so runs always terminate.
 
 ## Quickstart
 
@@ -21,40 +72,25 @@ uv sync --all-extras
 export ANTHROPIC_API_KEY=sk-...
 
 # Build something
-oneshot run "CLI tool that converts markdown to PDF" -o ./md2pdf
+oneshot run "youtube transcriber that takes a URL and returns the transcript as text" -o ./yt-transcriber
 ```
-
-That's it. Go make coffee. Come back to a working project in `./md2pdf`.
-
-## What it actually does
-
-Your one-liner goes through a full software development lifecycle — automatically:
-
-1. **Refines** your idea into a precise spec (resolves ambiguities, fills gaps)
-2. **Plans** the architecture (PRD, system design, component breakdown)
-3. **Implements** each component in parallel (with code review)
-4. **Integrates** everything into a cohesive project
-5. **Tests** it (import validation, unit tests, acceptance tests — with fix loops)
-6. **Packages** it (README, setup files, docs)
-
-If something breaks, it fixes it. If code comes out degenerate (repetitive, truncated, stub-only), it detects that and regenerates from scratch.
 
 ## Stepped workflow
 
-Don't want to run everything at once? Break it up:
+Run stages individually to inspect and edit between steps:
 
 ```bash
-oneshot ideate "your idea"              # idea -> spec.json
-oneshot plan my-tool.spec.json          # spec -> plan.json
-oneshot design my-tool.plan.json        # plan -> design.json
-oneshot build my-tool.design.json -o .  # design -> working project
+oneshot ideate "your idea"              # idea → spec.json
+oneshot plan my-tool.spec.json          # spec → plan.json
+oneshot design my-tool.plan.json        # plan → design.json
+oneshot build my-tool.design.json -o .  # design → working project
 ```
 
-Inspect and edit the JSON between steps. `oneshot build` auto-detects where to pick up.
+Each stage outputs a JSON file you can read, modify, and feed into the next stage.
 
 ## Configuration
 
-Works with Claude (default) or OpenAI models. Edit `oneshot.yaml`:
+Works with Claude (default) or OpenAI models:
 
 ```yaml
 models:
@@ -63,10 +99,8 @@ models:
   test_writer: "gpt-4o-mini"              # cheaper models for simpler tasks
 ```
 
-Use `oneshot-openai.yaml` for a full OpenAI configuration:
-
 ```bash
-oneshot run "your idea" -c oneshot-openai.yaml
+oneshot run "your idea" -c oneshot-openai.yaml   # full OpenAI config
 ```
 
 ## Options
@@ -79,6 +113,13 @@ oneshot run "your idea" -c oneshot-openai.yaml
 --dry-run            Skip GitHub/publishing
 ```
 
+## Limitations
+
+- **Python-only (for now).** The full pipeline — degeneracy detection, import validation, acceptance tests, and packaging — is built for Python projects. TypeScript and Go have basic dep-install and test-run support but no quality gates or fix loops.
+- **Single-process CLI tools and libraries.** Oneshot works best for self-contained projects: CLI tools, libraries, data scripts. It doesn't generate infrastructure, databases, frontends, or multi-service architectures.
+- **LLM cost.** A full run makes many LLM calls across 6 stages. Simple ideas may cost a few dollars; complex ones with multiple retry loops will cost more.
+- **No interactive clarification.** Ambiguities in your idea are resolved by the LLM, not by asking you. If the LLM guesses wrong, edit the spec JSON and re-run from that stage.
+
 ## Requirements
 
 - Python 3.11+
@@ -86,8 +127,6 @@ oneshot run "your idea" -c oneshot-openai.yaml
 - [uv](https://github.com/astral-sh/uv) (recommended) or pip
 
 ## Contributing
-
-Contributions are welcome. Open an issue first for anything non-trivial.
 
 ```bash
 git clone https://github.com/yourname/oneshot && cd oneshot
