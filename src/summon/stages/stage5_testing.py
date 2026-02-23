@@ -31,6 +31,23 @@ from summon.workspace import Workspace, collect_file_contents
 # ---------------------------------------------------------------------------
 
 
+def _build_integration_context(state: dict[str, Any]) -> dict[str, Any]:
+    """Strip component_results to only files for the integrator prompt.
+
+    The raw component_results include review_feedback and lld_summary which
+    are large and unnecessary for integration. Keeping only the files
+    dramatically reduces prompt size.
+    """
+    component_results = state.get("component_results", [])
+    slim = []
+    for comp in component_results:
+        slim.append({
+            "component_id": comp.get("component_id", ""),
+            "files": comp.get("files", []),
+        })
+    return {"component_results": slim}
+
+
 def _process_integration(state: dict[str, Any]) -> dict[str, Any]:
     """Write integration files to workspace from integrator output."""
     import re
@@ -137,7 +154,13 @@ def _build_project_files_context(state: dict[str, Any]) -> dict[str, Any]:
         return {"project_files": "(no files yet)"}
 
     ws = Workspace(workspace_path)
-    files = ws.list_files()
+    files = [
+        f for f in ws.list_files()
+        if not f.startswith(".venv/")
+        and not f.startswith("__pycache__/")
+        and "__pycache__/" not in f
+        and not f.endswith(".pyc")
+    ]
     return {"project_files": collect_file_contents(ws, files)}
 
 
@@ -652,8 +675,26 @@ def _process_adversarial_fixes(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def _rebuild_context(state: dict[str, Any]) -> dict[str, Any]:
-    """Rebuild project files context after unit tests pass (for acceptance testing)."""
-    return _build_project_files_context(state)
+    """Rebuild project files context after tests pass (for acceptance testing).
+
+    Excludes test files to keep prompt size manageable — acceptance criteria
+    only need the source code and spec.
+    """
+    workspace_path = state.get("workspace_path", "")
+    if not workspace_path:
+        return {"project_files": "(no files yet)"}
+
+    ws = Workspace(workspace_path)
+    files = [
+        f for f in ws.list_files()
+        if not f.startswith(".venv/")
+        and not f.startswith("__pycache__/")
+        and "__pycache__/" not in f
+        and not f.endswith(".pyc")
+        and not f.startswith("tests/")
+        and f != "acceptance_test.py"
+    ]
+    return {"project_files": collect_file_contents(ws, files)}
 
 
 def _process_acceptance_criteria(state: dict[str, Any]) -> dict[str, Any]:
@@ -793,6 +834,7 @@ def create_stage5_graph(config: SummonConfig) -> StateGraph:
     graph = StateGraph(SummonState)
 
     # --- Integration ---
+    graph.add_node("build_integration_context", _build_integration_context)
     graph.add_node("integrate", create_integrator_node(config))
     graph.add_node("process_integration", _process_integration)
     graph.add_node("install_deps", _install_deps)
@@ -841,7 +883,8 @@ def create_stage5_graph(config: SummonConfig) -> StateGraph:
     # === Edges ===
 
     # Integration
-    graph.set_entry_point("integrate")
+    graph.set_entry_point("build_integration_context")
+    graph.add_edge("build_integration_context", "integrate")
     graph.add_edge("integrate", "process_integration")
     graph.add_edge("process_integration", "install_deps")
 

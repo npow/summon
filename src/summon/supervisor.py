@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import time
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -12,6 +14,8 @@ from summon.config import SummonConfig
 from summon.models import get_llm
 from summon.prompts.supervisor import GATE_EVALUATION
 from summon.schemas.quality import GateResult
+
+logger = logging.getLogger(__name__)
 
 
 def create_gate_node(config: SummonConfig, stage_name: str, stage_key: str):
@@ -53,8 +57,24 @@ def create_gate_node(config: SummonConfig, stage_name: str, stage_key: str):
             HumanMessage(content=prompt_text),
         ]
 
-        response = llm.invoke(messages)
-        result = _extract_json(response.content)
+        max_retries = 5
+        last_error: Exception | None = None
+        result = None
+        for attempt in range(1, max_retries + 1):
+            if attempt > 1:
+                time.sleep(min(2 ** (attempt - 1), 30))
+            try:
+                response = llm.invoke(messages)
+                result = _extract_json(response.content)
+                break
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    "Gate %s LLM/parse failed (attempt %d/%d): %s",
+                    stage_name, attempt, max_retries, exc,
+                )
+        if result is None:
+            raise last_error  # type: ignore[misc]
 
         # Validate with Pydantic
         gate_result = GateResult.model_validate(result)

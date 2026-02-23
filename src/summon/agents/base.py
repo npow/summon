@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ def create_agent_node(
     3. Parses JSON output
     4. Returns {output_key: parsed_result}
     """
+    max_retries = 5
+
     def node(state: dict[str, Any]) -> dict[str, Any]:
         model_name = config.get_model(model_key)
         llm = get_llm(model_name, temperature=temperature)
@@ -44,12 +47,40 @@ def create_agent_node(
             HumanMessage(content=user_prompt),
         ]
 
-        response = llm.invoke(messages)
-        content = response.content
+        last_error: Exception | None = None
+        for attempt in range(1, max_retries + 1):
+            if attempt > 1:
+                time.sleep(min(2 ** (attempt - 1), 30))
 
-        # Parse JSON from response
-        parsed = _extract_json(content)
-        return {output_key: parsed}
+            try:
+                response = llm.invoke(messages)
+                content = response.content
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    "LLM call failed for %s (attempt %d/%d): %s",
+                    model_key, attempt, max_retries, exc,
+                )
+                continue
+
+            try:
+                parsed = _extract_json(content)
+                return {output_key: parsed}
+            except ValueError as exc:
+                last_error = exc
+                snippet = (content or "")[:200]
+                logger.warning(
+                    "JSON parse failed for %s (attempt %d/%d): %s — response started with: %s",
+                    model_key, attempt, max_retries, exc, snippet,
+                )
+
+        # All retries exhausted — return empty result so the pipeline can
+        # continue (downstream nodes handle missing data gracefully).
+        logger.error(
+            "All %d retries exhausted for %s. Returning empty result. Last error: %s",
+            max_retries, model_key, last_error,
+        )
+        return {output_key: {}}
 
     return node
 
@@ -107,6 +138,53 @@ def _fix_json_string(text: str) -> str:
     return text
 
 
+def _fix_newlines_in_strings(text: str) -> str:
+    """Escape literal newlines inside JSON string values.
+
+    LLMs (especially via proxies) often return JSON with literal newlines
+    inside string values instead of \\n escape sequences. This is invalid
+    JSON but very common.
+    """
+    result = []
+    in_string = False
+    escape_next = False
+    for ch in text:
+        if escape_next:
+            result.append(ch)
+            escape_next = False
+            continue
+        if ch == '\\' and in_string:
+            result.append(ch)
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            result.append(ch)
+            continue
+        if in_string and ch == '\n':
+            result.append('\\n')
+            continue
+        if in_string and ch == '\r':
+            result.append('\\r')
+            continue
+        if in_string and ch == '\t':
+            result.append('\\t')
+            continue
+        result.append(ch)
+    return ''.join(result)
+
+
+def _try_parse_json(candidate: str) -> dict | list | None:
+    """Try to parse JSON with progressive repair strategies."""
+    for repair in [lambda t: t, _fix_json_string, _fix_newlines_in_strings,
+                   lambda t: _fix_json_string(_fix_newlines_in_strings(t))]:
+        try:
+            return json.loads(repair(candidate))
+        except (json.JSONDecodeError, ValueError):
+            continue
+    return None
+
+
 def _extract_json(text: str) -> dict | list:
     """Extract JSON from LLM response text, with repair attempts."""
     text = text.strip()
@@ -130,13 +208,9 @@ def _extract_json(text: str) -> dict | list:
             end = text.rfind("```")
             if end > start:
                 candidate = text[start:end].strip()
-                try:
-                    return json.loads(candidate)
-                except json.JSONDecodeError:
-                    try:
-                        return json.loads(_fix_json_string(candidate))
-                    except (json.JSONDecodeError, ValueError):
-                        pass
+                parsed = _try_parse_json(candidate)
+                if parsed is not None:
+                    return parsed
             else:
                 # No closing ``` — response was likely truncated; take the rest
                 candidate = text[start:].strip()
@@ -155,13 +229,9 @@ def _extract_json(text: str) -> dict | list:
             end = text.rfind("```")
             if end > newline:
                 candidate = text[newline:end].strip()
-                try:
-                    return json.loads(candidate)
-                except json.JSONDecodeError:
-                    try:
-                        return json.loads(_fix_json_string(candidate))
-                    except (json.JSONDecodeError, ValueError):
-                        pass
+                parsed = _try_parse_json(candidate)
+                if parsed is not None:
+                    return parsed
         except ValueError:
             pass
 
@@ -171,14 +241,9 @@ def _extract_json(text: str) -> dict | list:
         end_idx = text.rfind(end_char)
         if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
             candidate = text[start_idx:end_idx + 1]
-            try:
-                return json.loads(candidate)
-            except json.JSONDecodeError:
-                # Try with fixes
-                try:
-                    return json.loads(_fix_json_string(candidate))
-                except json.JSONDecodeError:
-                    continue
+            parsed = _try_parse_json(candidate)
+            if parsed is not None:
+                return parsed
 
     # Strategy 5: Handle truncated JSON — try to repair by closing open structures
     for start_char, end_char in [("{", "}"), ("[", "]")]:
