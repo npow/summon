@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/summon-ai)](https://pypi.org/project/summon-ai/)
 [![Python versions](https://img.shields.io/pypi/pyversions/summon-ai)](https://pypi.org/project/summon-ai/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/npow/summon/actions/workflows/ci.yml/badge.svg)](https://github.com/npow/summon/actions/workflows/ci.yml)
+[![CI](https://github.com/npow/summon/actions/workflows/ci.yml/badge.svg)](https://github.com/npow/summon/actions/workflows/ci.yml) [![Docs](https://img.shields.io/badge/docs-mintlify-18a34a?style=flat-square)](https://mintlify.com/npow/summon)
 
 **When I have an idea, I want a working project — not "almost works".**
 
